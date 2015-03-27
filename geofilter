@@ -1,0 +1,22 @@
+#!/bin/bash
+
+wget "http://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv" -O ipv4-address-space.csv
+
+numbers=$(cat ipv4-address-space.csv | grep RIPE | grep -v LEGACY | cut -c 1-3)
+
+chain="ripe-filter"
+
+iptables -N $chain
+iptables -F $chain
+
+iptables -I INPUT 1 -p tcp --dport 22 -j $chain
+
+for number in $numbers; do
+	nozero=$(echo $number | sed 's/^0*//')
+	iptables -A $chain -p tcp -s $nozero.0.0.0/8 -j ACCEPT
+done
+
+iptables -A $chain -p tcp -j REJECT --reject-with tcp-reset
+
+iptables -nvL
+
