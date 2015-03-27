@@ -13,11 +13,11 @@ iptables -I INPUT 1 -p tcp --syn --dport 22 -j $chain
 
 for number in $numbers; do
 	nozero=$(echo $number | sed 's/^0*//')
-	iptables -A $chain -p tcp -s $nozero.0.0.0/8 -j ACCEPT
+	iptables -A $chain -p tcp -s $nozero.0.0.0/8 -j RETURN
 done
 
 # eduroam
-iptables -A $chain -p tcp -s 141.0.0.0/8 -j ACCEPT
+iptables -A $chain -p tcp -s 141.0.0.0/8 -j RETURN
 
 iptables -A $chain -p tcp -j REJECT --reject-with tcp-reset
 
