@@ -1,25 +1,33 @@
 #!/bin/bash
 
+# retrieve a list of IPv4 address range assigments
 wget "http://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.csv" -O ipv4-address-space.csv
 
+# parse the first 3 digits of RIPE administrated address ranges
 numbers=$(cat ipv4-address-space.csv | grep RIPE | grep -v LEGACY | cut -c 1-3)
 
+# create iptables chain for filtering
 chain="ripe-filter"
 
 iptables -N $chain
 iptables -F $chain
 
+# jump to chain created above if TCP SYN for the local SSH server is received
 iptables -I INPUT 1 -p tcp --syn --dport 22 -j $chain
 
+# fill chain wil acceptable IP address ranges (RIPE administrated)
 for number in $numbers; do
 	nozero=$(echo $number | sed 's/^0*//')
 	iptables -A $chain -p tcp -s $nozero.0.0.0/8 -j RETURN
 done
 
-# eduroam
+# also allow eduroam,
+# which apparently uses 141...
 iptables -A $chain -p tcp -s 141.0.0.0/8 -j RETURN
 
+# do not serve all other address ranges
 iptables -A $chain -p tcp -j REJECT --reject-with tcp-reset
 
+# summary of the changes
 iptables -nvL
 
